@@ -14,6 +14,12 @@ struct ContentView: View {
     @State private var showingScoreAlert = false
     @State private var scoreTitle = ""
     
+    @State private var score = 0
+    @State private var round = 0
+    @State private var wrongCountryName = ""
+    
+    private let finalRound = 5
+    
     var body: some View {
         
         ZStack {
@@ -44,6 +50,7 @@ struct ContentView: View {
                     
                     ForEach(0..<3) { number in
                         Button {
+                            wrongCountryName = countries[number]
                             flagTapped(number)
                         } label: {
                             Image(countries[number])
@@ -60,33 +67,75 @@ struct ContentView: View {
                 Spacer()
                 Spacer()
                 
-                Text("Score: ???")
+                Text("Score: \(score)")
                     .foregroundStyle(.white)
                     .font(.title.bold())
                 
                 Spacer()
+                
+                Button("Restart") {
+                    scoreTitle = "Warning"
+                    showingScoreAlert = true
+                }.buttonStyle(.borderedProminent)
+                
+                Spacer()
+                
             }.padding()
     
         }.alert(scoreTitle, isPresented: $showingScoreAlert) {
-            Button("Continue", action: askQuestion)
+            if scoreTitle == "Warning" {
+                // destructive 버튼이 있으면 자동으로 Cancel이 생김.
+                Button("Restart", role: .destructive, action: reset)
+            } else {
+                Button("Ok") {
+                    if round == finalRound {
+                        reset()
+                    } else {
+                        askQuestion()
+                    }
+                }
+            }
+            
         } message: {
-            Text("Your score is ???")
+            if round == finalRound {
+                Text("Your score is \(score)")
+            } else {
+                // 오답인 경우
+                if scoreTitle == "Wrong" {
+                    Text("This is \"\(wrongCountryName)\"")
+                } else {
+                    Text("Do You Want To Play Again?")
+                }
+            }
         }
     }
     
     func flagTapped(_ number: Int) {
         if number == correctAnswer {
-            scoreTitle = "Correct"
+            score += 1
+            askQuestion()
         } else {
             scoreTitle = "Wrong"
+            showingScoreAlert = true
         }
         
-        showingScoreAlert = true
+        round += 1
+        
+        if round == finalRound {
+            scoreTitle = "Game Over"
+            showingScoreAlert = true
+        }
     }
     
     func askQuestion() {
         countries.shuffle()
         correctAnswer = Int.random(in: 0...2)
+    }
+    
+    func reset() {
+        score = 0
+        round = 0
+        askQuestion()
     }
     
 }
